@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片生成器</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            display: flex;
+            max-width: 1000px;
+            width: 100%;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .left-panel, .right-panel {
+            padding: 20px;
+            flex: 1;
+        }
+        .left-panel {
+            border-right: 1px solid #ddd;
+        }
+        .right-panel {
+            border-left: 1px solid #ddd;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-align: center;
+        }
+        .button-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            width: 100%;
+        }
+        .button {
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        .blue {
+            background: linear-gradient(45deg, #007BFF, #0056b3);
+        }
+        .blue:hover {
+            background: linear-gradient(45deg, #0056b3, #004494);
+            transform: scale(1.05);
+        }
+        .red {
+            background: linear-gradient(45deg, #FF5733, #c0392b);
+        }
+        .red:hover {
+            background: linear-gradient(45deg, #c0392b, #a8322e);
+            transform: scale(1.05);
+        }
+        .image-container {
+            margin: 20px 0;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            width: 100%;
+            max-height: 600px; /* 最大高度 */
+            border: 2px solid #007BFF;
+        }
+        .image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        footer {
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+        }
+        .announcement {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .action-container {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between; /* 按钮并排 */
+            align-items: center;
+        }
+        .tags {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="left-panel">
+            <h1>获取二次元图片</h1>
+            <div class="announcement">
+                <h3>公告</h3>
+                <p>作者：李梓旭  身份证号：431024************</p>
+                <p>欢迎使用二次元图片获取工具！请遵守相关法律法规。</p>
+                <p>此工具仅作学习交流用途，请勿传播！</p>
+	<p></br></p>
+	<p>R16 和 R18+ 的图片会卡，请耐心等待</p>
+            </div>
+            <div class="button-container">
+                <button class="button blue" onclick="fetchImage('https://www.loliapi.com/acg/')">自适应二次元图</button>
+	                <button class="button blue" onclick="fetchImage('https://www.loliapi.com/acg/pc')">电脑端二次元图</button>
+                <button class="button blue" onclick="fetchImage('https://www.loliapi.com/acg/pe')">移动端二次元图</button>
+                <button class="button blue" onclick="fetchImage('https://www.loliapi.com/acg/pp')">二次元头像</button>
+                <button class="button red" onclick="fetchJson('https://api.allorigins.win/get?url=https://api.lolicon.app/setu/v2?r18=0')">R16图片</button>
+                <button class="button red" onclick="confirmR18()">R18+图片</button>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="image-container" id="imageContainer">
+                <p>点击按钮获取图片</p>
+            </div>
+            <div class="tags" id="tagsContainer" style="display: none;"></div> <!-- 默认隐藏标签 -->
+            <div class="action-container">
+                <button class="button blue" id="saveButton" onclick="saveImage()">保存图片</button>
+                <button class="button blue" id="tagButton" onclick="viewTags()">查看标签</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        © 2023 二次元图片获取工具
+    </footer>
+
+    <script>
+        let currentImageUrl = '';
+        let currentTags = []; // 用于存储当前图片的标签
+
+        // 处理蓝色按钮，获取图片并在右侧窗口中显示
+        async function fetchImage(url) {
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                currentImageUrl = URL.createObjectURL(blob);
+                displayImage(currentImageUrl);
+                clearTags(); // 清除标签
+            } catch (error) {
+                console.error('Error fetching image:', error);
+                alert('请求失败，请重试');
+            }
+        }
+
+        // 处理红色按钮，获取JSON并在右侧窗口中显示随机图片
+        async function fetchJson(url) {
+            try {
+                const randomParam = Math.random();
+                const response = await fetch(`${url}&_=${randomParam}`);
+                const data = await response.json();
+
+                if (data.contents) {
+                    const jsonData = JSON.parse(data.contents);
+                    const images = jsonData.data || [];
+
+                    if (images.length > 0) {
+                        const randomIndex = Math.floor(Math.random() * images.length);
+                        currentImageUrl = images[randomIndex].urls.original;
+                        currentTags = images[randomIndex].tags; // 获取当前图片的标签
+                        displayImage(currentImageUrl);
+                        clearTags(); // 清除之前的标签
+                    } else {
+                        alert('未找到数据');
+                    }
+                } else {
+                    alert('未找到数据');
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                alert('请求失败，请重试');
+            }
+        }
+
+        // 在右侧窗口中显示图片
+        function displayImage(imageUrl) {
+            const imageContainer = document.getElementById('imageContainer');
+            imageContainer.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            imageContainer.appendChild(img);
+        }
+
+        // 显示标签
+        function displayTags(tags) {
+            const tagsContainer = document.getElementById('tagsContainer');
+            tagsContainer.innerHTML = ''; // 清空之前的标签
+            if (tags.length > 0) {
+                const tagsList = document.createElement('p');
+                tagsList.textContent = '标签: ' + tags.join(', ');
+                tagsContainer.appendChild(tagsList);
+                tagsContainer.style.display = 'block'; // 显示标签
+            }
+        }
+
+        // 清除标签
+        function clearTags() {
+            const tagsContainer = document.getElementById('tagsContainer');
+            tagsContainer.innerHTML = ''; // 清空标签
+            tagsContainer.style.display = 'none'; // 隐藏标签
+        }
+
+        // 确认用户是否已满18岁
+        function confirmR18() {
+            const isConfirmed = window.confirm("您正在浏览R18+图片，请您确认您已满18岁。");
+            if (isConfirmed) {
+                fetchJson('https://api.allorigins.win/get?url=https://api.lolicon.app/setu/v2?r18=1');
+            }
+        }
+
+        // 保存图片
+        function saveImage() {
+            if (currentImageUrl) {
+                                const link = document.createElement('a');
+                link.href = currentImageUrl;
+                link.download = 'image.png'; // 设置下载的文件名
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                alert('请先获取一张图片');
+            }
+        }
+
+        // 查看标签
+        function viewTags() {
+            if (currentTags.length > 0) {
+                displayTags(currentTags); // 点击按钮后显示标签
+            } else {
+                alert('当前图片没有标签信息。');
+            }
+        }
+    </script>
+
+</body>
+</html>
